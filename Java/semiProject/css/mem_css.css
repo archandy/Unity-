@@ -1,0 +1,103 @@
+@CHARSET "UTF-8";
+
+.mem_main>div {
+	padding: 8px;
+}
+
+.mem_id, .mem_id2 {
+	display: inline-block;
+}
+
+.mem_pwd, .mem_pwd2 {
+	display: inline-block;
+}
+
+.mem_pwd_c, .mem_pwd_c2 {
+	display: inline-block;
+}
+
+.mem_nick, .mem_nick2 {
+	display: inline-block;
+}
+
+.mem_gen, .mem_gen2 {
+	display: inline-block;
+}
+
+.mem_id, .mem_pwd, .mem_pwd_c, .mem_nick, .mem_gen {
+	width: 120px;
+}
+
+.inputText {
+	border: 1px solid #dfdfdf;
+	border-radius:3px;
+	box-shadow: 1px 1px 1px #B0B0B0;
+}
+
+.mem_bar {
+	display: inline-block;
+	border: 1px solid #EAEAEA;
+	border-top:2px solid #ec0000;
+	width: 30px;
+	height: 20px;
+	box-shadow: 0px 3px 5px #B0B0B0;
+	float:left;
+}
+
+.mem_bar2 {
+	display: inline-block;
+	border: 1px solid #EAEAEA;
+	border-top:2px solid #ec0000;
+	width: 565px;
+	height: 20px;
+	box-shadow: 0px 3px 5px #B0B0B0;
+	font-size: 13px;
+	font-weight: bold;
+}
+
+.mem_1 {
+	margin: auto;
+	width: 600px;
+}
+
+#mem_bar_all{
+	padding: 0px;
+}
+
+.mem_main {
+	/* 	margin-left:200px; */
+	
+}
+
+.mem_button {
+	/* 	float: right; */
+	
+}
+
+.mem_bar3 {
+	border: 1px solid #d80000;
+	width: 28px;
+}
+
+.mem_bar4 {
+	border: 1px solid #d80000;
+	width: 565px;
+}
+
+.mem_top1 {
+	margin-top: 10px;
+}
+
+.mem_check, .mem_check_nick {
+	display: inline-block;
+}
+
+.mem_yhak,.mem_yhak3{
+	margin-top:10px;
+	border:1px solid #aabbcc;
+	width:550px;
+	height:200px;
+	margin-left: 7px;
+}
+
+
