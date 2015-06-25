@@ -1,0 +1,10 @@
+@CHARSET "UTF-8";
+    .main
+    {
+        width: 1000px;
+        margin: auto;
+    }
+    #info_main_side{background: #ffffff;border:1px solid;width:135px;float:left;margin-bottom: 25px;margin-right:10px;}
+    #info_main_side,#tabManue{display:inline-block;margin-top:10px;}
+    #tabManue{border:1px solid;width:850px;margin-bottom:10px;}
+    #contentsRight{border:1px solid;float:right;width:850px;}

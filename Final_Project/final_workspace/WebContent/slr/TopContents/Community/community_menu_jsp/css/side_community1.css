@@ -1,0 +1,29 @@
+@CHARSET "UTF-8";
+*{
+	margin:0;padding:0
+}
+#info_side_community, #info_side_photo, #info_side_down,#info_side_adult
+{
+	width:125px;
+	padding:3.3px;
+	padding-left:15px;
+	border-bottom:1px solid #e3e3e3;
+}
+font{
+    font-size:80%;
+}
+a{
+	text-decoration: none;
+	color:black;
+}
+#slr{
+	font-weight: bold;
+}
+#info_side_ad{
+	border: 1px solid #e3e3e3;
+	width:125px;
+	padding:3.3px;
+	padding-left:15px;
+	height:400px;
+	margin-top: 30px;
+}

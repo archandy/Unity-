@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<style>
+*{
+	margin:0;padding:0
+}
+#info_side_slr, #info_side_user, #info_side_location
+{
+	width:115px;
+	padding:3.3px;
+	padding-left:15px;
+}
+#info_side_location{
+background: rgb(122,188,255); /* Old browsers */
+background: -moz-radial-gradient(top, ellipse cover,  rgba(122,188,255,1) 0%, rgba(96,171,248,1) 44%, rgba(49,143,237,1) 100%); /* FF3.6+ */
+background: -webkit-gradient(radial, center center, 0px, center center, 100%, color-stop(0%,rgba(122,188,255,1)), color-stop(44%,rgba(96,171,248,1)), color-stop(100%,rgba(49,143,237,1))); /* Chrome,Safari4+ */
+background: -webkit-radial-gradient(center, ellipse cover,  rgba(122,188,255,1) 0%,rgba(96,171,248,1) 44%,rgba(49,43,217,1) 100%); /* Chrome10+,Safari5.1+ */
+background: -o-radial-gradient(top, ellipse cover,  rgb(77, 160, 236) 0%,rgb(55, 144, 234) 44%,rgb(28, 127, 217) 100%); /* Opera 12+ */
+background: -ms-radial-gradient(top, ellipse cover,  rgb(77, 160, 236) 0%,rgb(55, 144, 234) 44%,rgb(28, 127, 217) 100%); /* IE10+ */
+background: radial-gradient(ellipse at top,  rgb(77, 160, 236) 0%,rgb(55, 144, 234) 44%,rgb(28, 127, 217) 100%); /* W3C */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#7abcff', endColorstr='#318fed',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */
+}
+font{
+    font-size:80%;
+}
+a{
+	text-decoration: none;
+	color:black;
+}
+#a_location{
+	color:white;
+}
+#f_location{
+	font-weight: bold;
+}
+#side_wrap{
+	height:200px;
+}
+</style>
+</head>
+<body>
+<div id="side_wrap">
+	<div id="info_side_slr">
+		<a id="a_slr" href='mainSlr.jsp?content=TopContents/Market/market_list.jsp'><font id="f_slr">팝니다</font></a>
+	</div>
+	<div id="info_side_user">
+		<a id="a_user" href='mainSlr.jsp?content=TopContents/Market/market_list2.jsp'><font id="f_user">삽니다</font></a>
+	</div>
+	<div id="info_side_location">
+		<a id="a_location" href='mainSlr.jsp?content=TopContents/Market/market_list3.jsp'><font id="f_location">사기꾼게시판</font></a>
+	</div>
+</div>
+</body>
+</html>

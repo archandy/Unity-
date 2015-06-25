@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>팝업레이어</title>
+<script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+<style type="text/css">
+.btnList li{ float:left; margin:0; margin-right:10px; list-style:none;}
+.box1{ background:#FF9900; width:200px; height:100px; display:none; position:absolute; left:10px; top:50px;}
+.displayOn{ display:block;}
+.box2{ background:#FF0000; width:200px; height:100px; display:none; position:absolute; left:210px; top:50px;}
+.box3{ background:#00FF00; width:200px; height:100px; display:none; position:absolute; left:410px; top:50px;}
+</style>
+<script type="text/javascript">
+function showmap() { 
+ if(document.all.spot.style.visibility=="hidden") {
+   document.all.spot.style.visibility="visible";
+   return false;
+ }
+ if(document.all.spot.style.visibility=="visible") {
+  document.all.spot.style.visibility="hidden";
+  return false;
+ }
+}
+</script>
+
+</style>
+</head>
+<body>
+<!-- a태그에 링크걸기 -->
+<a href="#" onclick="showmap(spot);" title=""><img src="mmme.png" alt="" /></a>
+
+
+<!-- 레이어팝업 -->
+<div id="spot" style="position:absolute; left:520px; top:500px; visibility:hidden;">
+<jsp />
+</div>
+
+</body>
+</html>

@@ -1,0 +1,148 @@
+@CHARSET "UTF-8";
+
+#zzz123 {
+	margin-left: -310px;
+	margin-top: -10px;
+}
+
+#cameraimg, #cameraimg2, #cameraimg-1 {
+	display: inline-block;
+}
+
+#cameraimg2 {
+	vertical-align: top;
+	margin-top: 100px;
+	margin-left: 20px;
+	border-left: 2px solid #81BEF7;
+	padding: 1em;
+}
+
+#cameraimg {
+	padding: 40px;
+}
+
+#cameraimg-1 {
+	vertical-align:
+}
+
+#cameraimg3 {
+	margin-top: 50px;
+	background-color: #f0f0f0;
+	text-align: center;
+	padding: 30px;
+}
+
+.join_wrap {
+	width: 850px;
+}
+
+.page_tt {
+	border-bottom: 2px solid #81BEF7;
+}
+
+.page_btn {
+	margin-top: 30px;
+	text-align: center;
+}
+.join_wrap{
+	color:#333;font-size:12px;line-height:18px;font-family:"돋움"
+}
+#imim_main {
+	margin-top: 40px;
+	margin-left: 40px;
+}
+
+#imim2 {
+	width: 750px;
+	height: 300px;
+	border: 2px solid #f5f5f5;
+}
+
+#comeid {
+	width : 650px;
+	height: 80px;
+	background-color: #f5f5f5;
+	text-align: center;
+	position:relative;
+	top:30px;
+	left:50px;
+	vertical-align: middle;
+	width: 650px;
+}
+
+#imim3 {
+	position:relative;
+	border:2px solid #f5f5f5;
+	margin-left: 50px;
+	width: 650px;
+	height: 80px;
+	margin-top: 60px;
+	
+}
+
+#hpw1, #hpw2, #hpw3, #hpw4 {
+	display: inline-block;
+}
+#hpw1,#hpw3{
+background-color: #f5f5f5;
+	width:100px;
+	height:40px;
+	vertical-align: top;
+	
+}
+
+#hpw2{
+	margin-top: 7px;
+}
+
+#bbt, #bbt2 {
+	display: inline-block;
+}
+#bbgt{
+margin-top:20px;
+	text-align: center;
+}
+#IDPA2{
+margin-top: 5px;}
+#imimwrite{
+position: relative;
+top:20px;
+	}
+	#imim, #btbt {
+	display: inline-block;
+}
+
+#bott {
+	text-align: center;
+}
+
+#imim {
+	margin-left: 40px;
+}
+
+#btbt {
+	margin-top: 50px;
+	margin-left: 40px;
+	border-left: 2px solid #aabbcc;
+	height: 100px;
+	width: 450px;
+	vertical-align: top;
+}
+
+#btbt1, #btbt2,#btbt3,#btbt4{
+	display: inline-block;
+}
+
+#btbt1 {
+
+	
+	width:45px;
+	height: 30px;
+}
+
+#rere {
+	margin-left: 90px;
+	margin-top: 10px;
+}#btbt5{
+	margin-top: 5px;
+}

@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>jQuery Popup Overlay</title>
+
+    <!-- Force latest IE, Google Chrome Frame for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <meta name="description" content="jQuery plugin for responsive and accessible modal windows and tooltips." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Bootstrap styles -->
+    <link rel="stylesheet" href="http://getbootstrap.com/dist/css/bootstrap.min.css" />
+
+
+    <!-- Font Awesome icons -->
+    <link rel="stylesheet" href="http://weloveiconfonts.com/api/?family=fontawesome">
+    <script>
+    /*!
+     * jQuery Popup Overlay
+     *
+     * @version 1.7.6
+     * @requires jQuery v1.7.1+
+     * @link http://vast-engineering.github.com/jquery-popup-overlay/
+     */
+     
+     $(document).ready(function () {
+         $.fn.popup.defaults.pagecontainer = '.container'
+     });
+     
+    (function ($) {
+
+        var $window = $(window);
+        var options = {};
+        var zindexvalues = [];
+        var lastclicked = [];
+        var scrollbarwidth;
+        var bodymarginright = null;
+        var opensuffix = '_open';
+        var closesuffix = '_close';
+        var stack = [];
+        var transitionsupport = null;
+        var opentimer;
+        var iOS = /(iPad|iPhone|iPod)/g.test(navigator.userAgent);
+
+        var methods = {
+
+            _init: function (el) {
+                var $el = $(el);
+                var options = $el.data('popupoptions');
+                lastclicked[el.id] = false;
+                zindexvalues[el.id] = 0;
+
+                if (!$el.data('popup-initialized')) {
+                    $el.attr('data-popup-initialized', 'true');
+                    methods._initonce(el);
+                }
+
+                if (options.autoopen) {
+                    setTimeout(function() {
+                        methods.show(el, 0);
+                    }, 0);
+                }
+            },
+
+            _initonce: function (el) {
+                var $el = $(el);
+                var $body = $('body');
+                var $wrapper;
+                var options = $el.data('popupoptions');
+                var css;
+
+                bodymarginright = parseInt($body.css('margin-right'), 10);
+                transitionsupport = document.body.style.webkitTransition !== undefined ||
+                                    document.body.style.MozTransition !== undefined ||
+                                    document.body.style.msTransition !== undefined ||
+                                    document.body.style.OTransition !== undefined ||
+                                    document.body.style.transition !== undefined;
+
+                if (options.type == 'tooltip') {
+                    options.background = false;
+                    options.scrolllock = false;
+                }
+
+                if (options.backgroundactive) {
+                    options.background = false;
+                    options.blur = false;
+                    options.scrolllock = false;
+                }
+
+                if (options.scrolllock) {
+                    // Calculate the browser's scrollbar width dynamically
+                    var parent;
+                    var child;
+                    if (typeof scrollbarwidth === 'undefined') {
+                        parent = $('<div style="width:50px;height:50px;overflow:auto"><div/></div>').appendTo('body');
+                        child = parent.children();
+                        scrollbarwidth = child.innerWidth() - child.height(99).innerWidth();
+                        parent.remove();
+                    }
+                }
+
+                if (!$el.attr('id')) {
+                    $el.attr('id', 'j-popup-' + parseInt((Math.random() * 100000000), 10));
+                }
+
+                $el.addClass('popup_content');
+
+                $body.prepend(el);
+
+                $el.wrap('<div id="' + el.id + '_wrapper" class="popup_wrapper" />');
+
+                $wrapper = $('#' + el.id + '_wrapper');
+
+                $wrapper.css({
+                    opacity: 0,
+                    visibility: 'hidden',
+                    position: 'absolute'
+                });
+
+                // Make div clickable in iOS
+                if (iOS) {
+                    $wrapper.css('cursor', 'pointer');
+                }
+
+                if (options.type == 'overlay') {
+                    $wrapper.css('overflow','auto');
+                }
+
+                $el.css({
+                    opacity: 0,
+                    visibility: 'hidden',
+                    display: 'inline-block'
+                });
+
+                if (options.setzindex && !options.autozindex) {
+                    $wrapper.css('z-index', '100001');
+                }
+
+                if (!options.outline) {
+                    $el.css('outline', 'none');
+                }
+
+                if (options.transition) {
+                    $el.css('transition', options.transition);
+                    $wrapper.css('transition', options.transition);
+                }
+
+                // Hide popup content from screen readers initially
+                $el.attr('aria-hidden', true);
+
+                if ((options.background) && (!$('#' + el.id + '_background').length)) {
+
+                    $body.prepend('<div id="' + el.id + '_background" class="popup_background"></div>');
+
+                    var $background = $('#' + el.id + '_background');
+
+                    $background.css({
+                        opacity: 0,
+                        visibility: 'hidden',
+                        backgroundColor: options.color,
+                        position: 'fixed',
+                        top: 0,
+                        right: 0,
+                        bottom: 0,
+                        left: 0
+                    });
+
+                    if (options.setzindex && !options.autozindex) {
+                        $background.css('z-index', '100000');
+                    }
+
+                    if (options.transition) {
+                        $background.css('transition', options.transition);
+                    }
+                }
+
+                if (options.type == 'overlay') {
+                    $el.css({
+                        textAlign: 'left',
+                        position: 'relative',
+                        verticalAlign: 'middle'
+                    });
+
+                    css = {
+                        position: 'fixed',
+                        width: '100%',
+                        height: '100%',
+                        top: 0,
+                        left: 0,
+                        textAlign: 'center'
+                    };
+
+                    if(options.backgroundactive){
+                        css.position = 'relative';
+                        css.height = '0';
+                        css.overflow = 'visible';
+                    }
+
+                    $wrapper.css(css);
+
+                    // CSS vertical align helper
+                    $wrapper.append('<div class="popup_align" />');
+
+                    $('.popup_align').css({
+                        display: 'inline-block',
+                        verticalAlign: 'middle',
+                        height: '100%'
+                    });
+                }
+
+                // Add WAI ARIA role to announce dialog to screen readers
+                $el.attr('role', 'dialog');
+
+                var openelement =  (options.openelement) ? options.openelement : ('.' + el.id + opensuffix);
+
+                $(openelement).each(function (i, item) {
+                    $(item).attr('data-popup-ordinal', i);
+
+                    if (!item.id) {
+                        $(item).attr('id', 'open_' + parseInt((Math.random() * 100000000), 10));
+                    }
+                });
+
+                // Set aria-labelledby (if aria-label or aria-labelledby is not set in html)
+                if (!($el.attr('aria-labelledby') || $el.attr('aria-label'))) {
+                    $el.attr('aria-labelledby', $(openelement).attr('id'));
+                }
+
+                // Show and hide tooltips on hover
+                if(options.action == 'hover'){
+                    options.keepfocus = false;
+
+                    // Handler: mouseenter, focusin
+                    $(openelement).on('mouseenter', function (event) {
+                        methods.show(el, $(this).data('popup-ordinal'));
+                    });
+
+                    // Handler: mouseleave, focusout
+                    $(openelement).on('mouseleave', function (event) {
+                        methods.hide(el);
+                    });
+
+                } else {
+
+                    // Handler: Show popup when clicked on `open` element
+                    $(document).on('click', openelement, function (event) {
+                        event.preventDefault();
+
+                        var ord = $(this).data('popup-ordinal');
+                        setTimeout(function() { // setTimeout is to allow `close` method to finish (for issues with multiple tooltips)
+                            methods.show(el, ord);
+                        }, 0);
+                    });
+                }
+
+                if (options.closebutton) {
+                    methods.addclosebutton(el);
+                }
+
+                if (options.detach) {
+                    $el.hide().detach();
+                } else {
+                    $wrapper.hide();
+                }
+            },
+
+            /**
+             * Show method
+             *
+             * @param {object} el - popup instance DOM node
+             * @param {number} ordinal - order number of an `open` element
+             */
+            show: function (el, ordinal) {
+                var $el = $(el);
+
+                if ($el.data('popup-visible')) return;
+
+                // Initialize if not initialized. Required for: $('#popup').popup('show')
+                if (!$el.data('popup-initialized')) {
+                    methods._init(el);
+                }
+                $el.attr('data-popup-initialized', 'true');
+
+                var $body = $('body');
+                var options = $el.data('popupoptions');
+                var $wrapper = $('#' + el.id + '_wrapper');
+                var $background = $('#' + el.id + '_background');
+
+                // `beforeopen` callback event
+                callback(el, ordinal, options.beforeopen);
+
+                // Remember last clicked place
+                lastclicked[el.id] = ordinal;
+
+                // Add popup id to popup stack
+                setTimeout(function() {
+                    stack.push(el.id);
+                }, 0);
+
+                // Calculating maximum z-index
+                if (options.autozindex) {
+
+                    var elements = document.getElementsByTagName('*');
+                    var len = elements.length;
+                    var maxzindex = 0;
+
+                    for(var i=0; i<len; i++){
+
+                        var elementzindex = $(elements[i]).css('z-index');
+
+                        if(elementzindex !== 'auto'){
+
+                          elementzindex = parseInt(elementzindex, 10);
+
+                          if(maxzindex < elementzindex){
+                            maxzindex = elementzindex;
+                          }
+                        }
+                    }
+
+                    zindexvalues[el.id] = maxzindex;
+
+                    // Add z-index to the background
+                    if (options.background) {
+                        if (zindexvalues[el.id] > 0) {
+                            $('#' + el.id + '_background').css({
+                                zIndex: (zindexvalues[el.id] + 1)
+                            });
+                        }
+                    }
+
+                    // Add z-index to the wrapper
+                    if (zindexvalues[el.id] > 0) {
+                        $wrapper.css({
+                            zIndex: (zindexvalues[el.id] + 2)
+                        });
+                    }
+                }
+
+                if (options.detach) {
+                    $wrapper.prepend(el);
+                    $el.show();
+                } else {
+                    $wrapper.show();
+                }
+
+                opentimer = setTimeout(function() {
+                    $wrapper.css({
+                        visibility: 'visible',
+                        opacity: 1
+                    });
+
+                    $('html').addClass('popup_visible').addClass('popup_visible_' + el.id);
+                    $wrapper.addClass('popup_wrapper_visible');
+                }, 20); // 20ms required for opening animation to occur in FF
+
+                // Disable background layer scrolling when popup is opened
+                if (options.scrolllock) {
+                    $body.css('overflow', 'hidden');
+                    if ($body.height() > $window.height()) {
+                        $body.css('margin-right', bodymarginright + scrollbarwidth);
+                    }
+                }
+
+                if(options.backgroundactive){
+                    //calculates the vertical align
+                    $el.css({
+                        top:(
+                            $window.height() - (
+                                $el.get(0).offsetHeight +
+                                parseInt($el.css('margin-top'), 10) +
+                                parseInt($el.css('margin-bottom'), 10)
+                            )
+                        )/2 +'px'
+                    });
+                }
+
+                $el.css({
+                    'visibility': 'visible',
+                    'opacity': 1
+                });
+
+                // Show background
+                if (options.background) {
+                    $background.css({
+                        'visibility': 'visible',
+                        'opacity': options.opacity
+                    });
+
+                    // Fix IE8 issue with background not appearing
+                    setTimeout(function() {
+                        $background.css({
+                            'opacity': options.opacity
+                        });
+                    }, 0);
+                }
+
+                $el.data('popup-visible', true);
+
+                // Position popup
+                methods.reposition(el, ordinal);
+
+                // Remember which element had focus before opening a popup
+                $el.data('focusedelementbeforepopup', document.activeElement);
+
+                // Handler: Keep focus inside dialog box
+                if (options.keepfocus) {
+                    // Make holder div focusable
+                    $el.attr('tabindex', -1);
+
+                    // Focus popup or user specified element.
+                    // Initial timeout of 50ms is set to give some time to popup to show after clicking on
+                    // `open` element, and after animation is complete to prevent background scrolling.
+                    setTimeout(function() {
+                        if (options.focuselement === 'closebutton') {
+                            $('#' + el.id + ' .' + el.id + closesuffix + ':first').focus();
+                        } else if (options.focuselement) {
+                            $(options.focuselement).focus();
+                        } else {
+                            $el.focus();
+                        }
+                    }, options.focusdelay);
+
+                }
+
+                // Hide main content from screen readers
+                $(options.pagecontainer).attr('aria-hidden', true);
+
+                // Reveal popup content to screen readers
+                $el.attr('aria-hidden', false);
+
+                callback(el, ordinal, options.onopen);
+
+                if (transitionsupport) {
+                    $wrapper.one('transitionend', function() {
+                        callback(el, ordinal, options.opentransitionend);
+                    });
+                } else {
+                    callback(el, ordinal, options.opentransitionend);
+                }
+            },
+
+            /**
+             * Hide method
+             *
+             * @param {object} el - popup instance DOM node
+             */
+            hide: function (el) {
+                if(opentimer) clearTimeout(opentimer);
+
+                var $body = $('body');
+                var $el = $(el);
+                var options = $el.data('popupoptions');
+                var $wrapper = $('#' + el.id + '_wrapper');
+                var $background = $('#' + el.id + '_background');
+
+                $el.data('popup-visible', false);
+
+
+                if (stack.length === 1) {
+                    $('html').removeClass('popup_visible').removeClass('popup_visible_' + el.id);
+                } else {
+                    if($('html').hasClass('popup_visible_' + el.id)) {
+                        $('html').removeClass('popup_visible_' + el.id);
+                    }
+                }
+
+                // Remove last opened popup from the stack
+                stack.pop();
+
+                if($wrapper.hasClass('popup_wrapper_visible')) {
+                    $wrapper.removeClass('popup_wrapper_visible');
+                }
+
+                if (options.keepfocus) {
+                    // Focus back on saved element
+                    setTimeout(function() {
+                        if ($($el.data('focusedelementbeforepopup')).is(':visible')) {
+                            $el.data('focusedelementbeforepopup').focus();
+                        }
+                    }, 0);
+                }
+
+                // Hide popup
+                $wrapper.css({
+                    'visibility': 'hidden',
+                    'opacity': 0
+                });
+                $el.css({
+                    'visibility': 'hidden',
+                    'opacity': 0
+                });
+
+                // Hide background
+                if (options.background) {
+                    $background.css({
+                        'visibility': 'hidden',
+                        'opacity': 0
+                    });
+                }
+
+                // Reveal main content to screen readers
+                $(options.pagecontainer).attr('aria-hidden', false);
+
+                // Hide popup content from screen readers
+                $el.attr('aria-hidden', true);
+
+                // `onclose` callback event
+                callback(el, lastclicked[el.id], options.onclose);
+
+                if (transitionsupport && $el.css('transition-duration') !== '0s') {
+                    $el.one('transitionend', function(e) {
+
+                        if (!($el.data('popup-visible'))) {
+                            if (options.detach) {
+                                $el.hide().detach();
+                            } else {
+                                $wrapper.hide();
+                            }
+                        }
+
+                        // Re-enable scrolling of background layer
+                        if (options.scrolllock) {
+                            setTimeout(function() {
+                                $body.css({
+                                    overflow: 'visible',
+                                    'margin-right': bodymarginright
+                                });
+                            }, 10); // 10ms added for CSS transition in Firefox which doesn't like overflow:auto
+                        }
+
+                        callback(el, lastclicked[el.id], options.closetransitionend);
+                    });
+                } else {
+                    if (options.detach) {
+                        $el.hide().detach();
+                    } else {
+                        $wrapper.hide();
+                    }
+
+                    // Re-enable scrolling of background layer
+                    if (options.scrolllock) {
+                        setTimeout(function() {
+                            $body.css({
+                                overflow: 'visible',
+                                'margin-right': bodymarginright
+                            });
+                        }, 10); // 10ms added for CSS transition in Firefox which doesn't like overflow:auto
+                    }
+
+                    callback(el, lastclicked[el.id], options.closetransitionend);
+                }
+
+            },
+
+            /**
+             * Toggle method
+             *
+             * @param {object} el - popup instance DOM node
+             * @param {number} ordinal - order number of an `open` element
+             */
+            toggle: function (el, ordinal) {
+                if ($(el).data('popup-visible')) {
+                    methods.hide(el);
+                } else {
+                    setTimeout(function() {
+                        methods.show(el, ordinal);
+                    }, 0);
+                }
+            },
+
+            /**
+             * Reposition method
+             *
+             * @param {object} el - popup instance DOM node
+             * @param {number} ordinal - order number of an `open` element
+             */
+            reposition: function (el, ordinal) {
+                var $el = $(el);
+                var options = $el.data('popupoptions');
+                var $wrapper = $('#' + el.id + '_wrapper');
+                var $background = $('#' + el.id + '_background');
+
+                ordinal = ordinal || 0;
+
+                // Tooltip type
+                if (options.type == 'tooltip') {
+                    $wrapper.css({
+                        'position': 'absolute'
+                    });
+
+                    var $tooltipanchor;
+                    if (options.tooltipanchor) {
+                        $tooltipanchor = $(options.tooltipanchor);
+                    } else if (options.openelement) {
+                        $tooltipanchor = $(options.openelement).filter('[data-popup-ordinal="' + ordinal + '"]');
+                    } else {
+                        $tooltipanchor = $('.' + el.id + opensuffix + '[data-popup-ordinal="' + ordinal + '"]');
+                    }
+
+                    var linkOffset = $tooltipanchor.offset();
+
+                    // Horizontal position for tooltip
+                    if (options.horizontal == 'right') {
+                        $wrapper.css('left', linkOffset.left + $tooltipanchor.outerWidth() + options.offsetleft);
+                    } else if (options.horizontal == 'leftedge') {
+                        $wrapper.css('left', linkOffset.left + $tooltipanchor.outerWidth() - $tooltipanchor.outerWidth() +  options.offsetleft);
+                    } else if (options.horizontal == 'left') {
+                        $wrapper.css('right', $window.width() - linkOffset.left  - options.offsetleft);
+                    } else if (options.horizontal == 'rightedge') {
+                        $wrapper.css('right', $window.width()  - linkOffset.left - $tooltipanchor.outerWidth() - options.offsetleft);
+                    } else {
+                        $wrapper.css('left', linkOffset.left + ($tooltipanchor.outerWidth() / 2) - ($el.outerWidth() / 2) - parseFloat($el.css('marginLeft')) + options.offsetleft);
+                    }
+
+                    // Vertical position for tooltip
+                    if (options.vertical == 'bottom') {
+                        $wrapper.css('top', linkOffset.top + $tooltipanchor.outerHeight() + options.offsettop);
+                    } else if (options.vertical == 'bottomedge') {
+                        $wrapper.css('top', linkOffset.top + $tooltipanchor.outerHeight() - $el.outerHeight() + options.offsettop);
+                    } else if (options.vertical == 'top') {
+                        $wrapper.css('bottom', $window.height() - linkOffset.top - options.offsettop);
+                    } else if (options.vertical == 'topedge') {
+                        $wrapper.css('bottom', $window.height() - linkOffset.top - $el.outerHeight() - options.offsettop);
+                    } else {
+                        $wrapper.css('top', linkOffset.top + ($tooltipanchor.outerHeight() / 2) - ($el.outerHeight() / 2) - parseFloat($el.css('marginTop')) + options.offsettop);
+                    }
+
+                // Overlay type
+                } else if (options.type == 'overlay') {
+
+                    // Horizontal position for overlay
+                    if (options.horizontal) {
+                        $wrapper.css('text-align', options.horizontal);
+                    } else {
+                        $wrapper.css('text-align', 'center');
+                    }
+
+                    // Vertical position for overlay
+                    if (options.vertical) {
+                        $el.css('vertical-align', options.vertical);
+                    } else {
+                        $el.css('vertical-align', 'middle');
+                    }
+                }
+            },
+
+            /**
+             * Add-close-button method
+             *
+             * @param {object} el - popup instance DOM node
+             */
+            addclosebutton: function (el) {
+                var genericCloseButton;
+
+                if ($(el).data('popupoptions').closebuttonmarkup) {
+                    genericCloseButton = $(options.closebuttonmarkup).addClass(el.id + '_close');
+                } else {
+                    genericCloseButton = '<button class="popup_close ' + el.id + '_close" title="Close" aria-label="Close"><span aria-hidden="true">×</span></button>';
+                }
+
+                if ($el.data('popup-initialized')){
+                    $el.append(genericCloseButton);
+                }
+
+            }
+
+        };
+
+        /**
+         * Callback event calls
+         *
+         * @param {object} el - popup instance DOM node
+         * @param {number} ordinal - order number of an `open` element
+         * @param {function} func - callback function
+         */
+        var callback = function (el, ordinal, func) {
+            var options = $(el).data('popupoptions');
+            var openelement =  (options.openelement) ? options.openelement : ('.' + el.id + opensuffix);
+            var elementclicked = $(openelement + '[data-popup-ordinal="' + ordinal + '"]');
+            if (typeof func == 'function') {
+                func.call($(el), el, elementclicked);
+            }
+        };
+
+        // Hide popup if ESC key is pressed
+        $(document).on('keydown', function (event) {
+            if(stack.length) {
+                var elementId = stack[stack.length - 1];
+                var el = document.getElementById(elementId);
+
+                if ($(el).data('popupoptions').escape && event.keyCode == 27) {
+                    methods.hide(el);
+                }
+            }
+        });
+
+        // Hide popup on click
+        $(document).on('click', function (event) {
+            if(stack.length) {
+                var elementId = stack[stack.length - 1];
+                var el = document.getElementById(elementId);
+                var closeButton = ($(el).data('popupoptions').closeelement) ? $(el).data('popupoptions').closeelement : ('.' + el.id + closesuffix);
+
+                // Click on Close button
+                if ($(event.target).closest(closeButton).length) {
+                    event.preventDefault();
+                    methods.hide(el);
+                }
+
+                // Click outside of popup
+                if ($(el).data('popupoptions').blur && !$(event.target).closest('#' + elementId).length && event.which !== 2 && $(event.target).is(':visible')) {
+                    methods.hide(el);
+
+                    if ($(el).data('popupoptions').type === 'overlay') {
+                        event.preventDefault(); // iOS will trigger click on the links below the overlay when clicked on the overlay if we don't prevent default action
+                    }
+                }
+            }
+        });
+
+        // Keep keyboard focus inside of popup
+        $(document).on('focusin', function(event) {
+            if(stack.length) {
+                var elementId = stack[stack.length - 1];
+                var el = document.getElementById(elementId);
+
+                if ($(el).data('popupoptions').keepfocus) {
+                    if (!el.contains(event.target)) {
+                        event.stopPropagation();
+                        el.focus();
+                    }
+                }
+            }
+        });
+
+        /**
+         * Plugin API
+         */
+        $.fn.popup = function (customoptions) {
+            return this.each(function () {
+
+                $el = $(this);
+
+                if (typeof customoptions === 'object') {  // e.g. $('#popup').popup({'color':'blue'})
+                    var opt = $.extend({}, $.fn.popup.defaults, customoptions);
+                    $el.data('popupoptions', opt);
+                    options = $el.data('popupoptions');
+
+                    methods._init(this);
+
+                } else if (typeof customoptions === 'string') { // e.g. $('#popup').popup('hide')
+                    if (!($el.data('popupoptions'))) {
+                        $el.data('popupoptions', $.fn.popup.defaults);
+                        options = $el.data('popupoptions');
+                    }
+
+                    methods[customoptions].call(this, this);
+
+                } else { // e.g. $('#popup').popup()
+                    if (!($el.data('popupoptions'))) {
+                        $el.data('popupoptions', $.fn.popup.defaults);
+                        options = $el.data('popupoptions');
+                    }
+
+                    methods._init(this);
+
+                }
+
+            });
+        };
+
+        $.fn.popup.defaults = {
+            type: 'overlay',
+            autoopen: false,
+            background: true,
+            backgroundactive: false,
+            color: 'black',
+            opacity: '0.5',
+            horizontal: 'center',
+            vertical: 'middle',
+            offsettop: 0,
+            offsetleft: 0,
+            escape: true,
+            blur: true,
+            setzindex: true,
+            autozindex: false,
+            scrolllock: false,
+            closebutton: false,
+            closebuttonmarkup: null,
+            keepfocus: true,
+            focuselement: null,
+            focusdelay: 50,
+            outline: false,
+            pagecontainer: null,
+            detach: false,
+            openelement: null,
+            closeelement: null,
+            transition: null,
+            tooltipanchor: null,
+            beforeopen: null,
+            onclose: null,
+            onopen: null,
+            opentransitionend: null,
+            closetransitionend: null
+        };
+
+    });
+
+    </script>
+    <style>
+        [class*="fontawesome-"]:before {
+          font-family: 'FontAwesome', sans-serif;
+        }
+    </style>
+
+    <!-- jQuery -->
+    <script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+
+    <!-- jQuery Popup Overlay -->
+    <script src="jquery.popupoverlay.js"></script>
+
+    <!-- Custom styles for the demo page -->
+    <style>
+    img {
+        max-width: 100%;
+    }
+    .well {
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        display:none;
+        margin:1em;
+    }
+    pre.prettyprint {
+        padding: 9px 14px;
+    }
+    .fulltable {
+        max-width: 100%;
+        overflow: auto;
+    }
+    .container {
+        padding-left: 0;
+        padding-right: 0;
+    }
+    .lineheight {
+        line-height: 3em;
+    }
+    .pagetop {
+        background: url(http://subtlepatterns.com/patterns/congruent_outline.png) #333;
+        background-attachment: fixed;
+        color: #fff;
+    }
+    .page-header {
+        border-bottom: none;
+    }
+    .initialism {
+        font-weight: bold;
+        letter-spacing: 1px;
+        font-size: 12px;
+    }
+
+    </style>
+</head>
+<body>
+
+<div class="pagetop">
+    <div class="container">
+        <div class="page-header col-md-10 col-md-offset-1">
+            <h1>jQuery Popup Overlay</h1>
+            <p>jQuery plugin for responsive and accessible modal windows and tooltips</p>
+            <p class="h1">
+                <a href="https://github.com/vast-engineering/jquery-popup-overlay/archive/gh-pages.zip" class="btn btn-primary btn-success btn-lg"><span class="fontawesome-download-alt"></span> Download</a>
+                <a href="https://github.com/vast-engineering/jquery-popup-overlay" class="btn btn-lg btn-default"><span class="fontawesome-github"></span> View project on GitHub</a>
+            </p>
+            <p class="text-muted">Currently v1.7.6</p>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+    <section class="col-md-10 col-md-offset-1">
+
+        <h2>Demo</h2>
+
+        <p class="lineheight">
+            <a class="initialism basic_open btn btn-success" href="#basic">Basic</a>
+            <a class="initialism fade_open btn btn-success" href="#fade">Fade</a>
+            <a class="initialism fadeandscale_open btn btn-success" href="#fadeandscale">Fade &amp; scale</a>
+            <button class="initialism slide_open btn btn-success">Slide</button>
+            <button class="initialism standalone_open btn btn-success">Stand alone</button>
+            <a class="initialism active_bg_open btn btn-success" href="#active_bg">Active background</a>
+            <a href="#my_tooltip" class="initialism my_tooltip_open btn btn-success" id="my_tooltip_open">Tooltip</a>
+            <button class="initialism fall_open btn btn-success">Callback events</button>
+            <button class="initialism other_open btn btn-success">&hellip;</button>
+        </p>
+
+        <h2>Features</h2>
+
+        <ul>
+            <li><b>Positioned with CSS:</b>
+                Overlays are horizontally and vertically centered with CSS, without any JavaScript offset calculations,
+                therefore remain centered even if their height change.</li>
+            <li><b>Suitable for responsive web design: </b>
+                Overlays are fully customizable with CSS and will adapt to any screen size and orientation.
+                You can set a flexible minimum and maximum width and height to the overlay, as well as media queries.</li>
+            <li><b>Always visible: </b>
+                If the height of the overlay exceeds the visible area, vertical scrolling
+                 will be automatically enabled to prevent the off-screen content from being unreachable.</li>
+            <li><b>Accessible: </b>
+                Keyboard navigable using <kbd>Tab</kbd> key. <abbr title="Web Accessibility Initiative - Accessible Rich Internet Applications">WAI-ARIA</abbr> roles are added automatically if missing. Text resizing or zooming will not break the layout, visibility, or position of the popup.</li>
+            <li><b>Device independent: </b>
+                Works well on desktops, tablets, most modern phones and other devices. Optimized and tested in all modern browsers including <abbr title="Internet Explorer 7 and later">IE7+</abbr>, and in new versions of popular screen readers including JAWS, NVDA, and VoiceOver.</li>
+                <li><b>Flexible and customizable: </b>
+                    Supports multiple popup instances, custom CSS3 animations and transitions...</li>
+        </ul>
+
+        <h2>Usage</h2>
+
+<pre class="prettyprint">
+<code>&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;Site Title&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+  &lt;!-- Add an optional button to open the popup --&gt;
+  &lt;button class="my_popup_open"&gt;Open popup&lt;/button&gt;
+
+  &lt;!-- Add content to the popup --&gt;
+  &lt;div id="my_popup"&gt;
+
+    ...popup content...
+
+    &lt;!-- Add an optional button to close the popup --&gt;
+    &lt;button class="my_popup_close"&gt;Close&lt;/button&gt;
+
+  &lt;/div&gt;
+
+  &lt;!-- Include jQuery --&gt;
+  &lt;script src="http://code.jquery.com/jquery-1.8.2.min.js"&gt;&lt;/script&gt;
+
+  &lt;!-- Include jQuery Popup Overlay --&gt;
+  &lt;script src="http://vast-engineering.github.io/jquery-popup-overlay/jquery.popupoverlay.js"&gt;&lt;/script&gt;
+
+  &lt;script&gt;
+    $(document).ready(function() {
+
+      // Initialize the plugin
+      $('#my_popup').popup();
+
+    });
+  &lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;</code>
+</pre>
+
+        <h3>Options</h3>
+
+        <div class="fulltable">
+        <table class="table table-bordered table-striped">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>type</td>
+            <td>'overlay'<br />'tooltip'</td>
+            <td>'overlay'</td>
+            <td>Sets popup type to overlay or tooltip.</td>
+        </tr>
+        <tr>
+            <td>autoopen</td>
+            <td>boolean</td>
+            <td>false</td>
+            <td>Shows the popup when initialized.</td>
+        </tr>
+        <tr>
+            <td>scrolllock</td>
+            <td>boolean</td>
+            <td>false</td>
+            <td>Disables scrolling of background content while the popup is visible.</td>
+        </tr>
+        <tr>
+            <td>background</td>
+            <td>boolean</td>
+            <td>true</td>
+            <td>Enables background cover.<br />
+                <small  class="text-muted">Disabled for tooltips.</small></td>
+        </tr>
+        <tr>
+            <td>backgroundactive</td>
+            <td>boolean</td>
+            <td>false</td>
+            <td>Disable background cover and keep background elements active.<br />
+                <small  class="text-muted">Implies background, blur and scrolllock to false</small></td>
+        </tr>
+        <tr>
+            <td>color</td>
+            <td>string <small class="text-muted"><i>(CSS&nbsp;color)</i></small></td>
+            <td>'#000'</td>
+            <td>Sets background color.</td>
+        </tr>
+        <tr>
+            <td>opacity</td>
+            <td>float</td>
+            <td>0.5</td>
+            <td>Sets background opacity.</td>
+        </tr>
+        <tr>
+            <td>horizontal</td>
+            <td>'center'<br />'left'<br />'right'<br /><span class="text-muted">'leftedge'</span><br /><span class="text-muted">'rightedge'</span></td>
+            <td>'center'</td>
+            <td><p>Sets horizontal position.</p>
+                <p class="text-muted"><small>Options `leftedge` and `rightedge` can be used only for tooltips, and will align the tooltip to the left or right edge of the opening element (`openelement`).</small></p></td>
+        </tr>
+        <tr>
+            <td>vertical</td>
+            <td>'center'<br />'top'<br />'bottom'<br /><span class="text-muted">'topedge'</span><br /><span class="text-muted">'bottomedge'</span></td>
+            <td>'center'</td>
+            <td><p>Sets vertical position.</p>
+                <p class="text-muted"><small>Options `topedge` and `bottomedge` can be used only for tooltips, and will align the tooltip to the top or bottom edge of the opening element (`openelement`).</small></p></td>
+        </tr>
+        <tr>
+            <td>offsettop</td>
+            <td>number</td>
+            <td>0</td>
+            <td><p>Sets top offset to tooltip.</p></td>
+        </tr>
+        <tr>
+            <td>offsetleft</td>
+            <td>number</td>
+            <td>0</td>
+            <td><p>Sets left offset to tooltip.</p></td>
+        </tr>
+        <tr>
+            <td>escape</td>
+            <td>boolean</td>
+            <td>true</td>
+            <td>Closes the popup when <kbd>Escape</kbd> key is pressed.</td>
+        </tr>
+        <tr>
+            <td>blur</td>
+            <td>boolean</td>
+            <td>true</td>
+            <td>Closes the popup when clicked outside of it.</td>
+        </tr>
+        <tr>
+            <td>setzindex</td>
+            <td>boolean</td>
+            <td>true</td>
+            <td>Sets default z-index to the popup (2001) and to the background (2000).</td>
+        </tr>
+        <tr>
+            <td>autozindex</td>
+            <td>boolean</td>
+            <td>false</td>
+            <td><p>Sets highest z-index on the page to the popup.</p></td>
+        </tr>
+        <tr>
+            <td>keepfocus</td>
+            <td>boolean</td>
+            <td>true</td>
+            <td>Lock keyboard focus inside of popup. Recommended to be enabled.</td>
+        </tr>
+        <tr>
+            <td>focuselement</td>
+            <td>string <small class="text-muted"><i>(CSS&nbsp;selector)</i></small></td>
+            <td>'#<i>{popup_id}</i>'</td>
+            <td>Enables you to specify the element which will be focused upon showing the popup. By default, the popup element <code>#my_popup</code> will recieve the initial focus.</td>
+        </tr>
+        <tr>
+            <td>focusdelay</td>
+            <td>number</td>
+            <td>50</td>
+            <td>Sets a delay in milliseconds before focusing an element. This is to prevent page scrolling during opening transition, as browsers will try to move the viewport to an element which received the focus.</td>
+        </tr>
+        <tr>
+            <td>pagecontainer</td>
+            <td>string <small class="text-muted"><i>(CSS&nbsp;selector)</i></small></td>
+            <td></td>
+            <td><p>Sets a page container (to help screen reader users). Page container should be the element that surrounds all the content on the page (e.g. '.container' in the case of this very page).</p>
+                <p class="text-muted"><small>It's highly recommended that you set the page container to help some screen readers read the modal dialog correctly. Doing so, when the popup is visible, <code>aria-hidden="true"</code> will be set to the page container and <code>aria-hidden="false"</code> to the popup, and vice-versa when the popup closes. You can set `pagecontainer` once per website (e.g. <code>$.fn.popup.defaults.pagecontainer = '.container'</code>).</small></p></td>
+        </tr>
+        <tr>
+            <td>outline</td>
+            <td>boolean</td>
+            <td>false</td>
+            <td><p>Shows a default browser outline on popup element when focused.</p>
+                <p class="text-muted"><small>Setting to <code>false</code> is equivalent to <code>#my_popup{outline: none;}</code>.</small></p></td>
+        </tr>
+        <tr>
+            <td>detach</td>
+            <td>boolean</td>
+            <td>false</td>
+            <td>
+                <p>Removes popup element from the DOM after closing transition.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>openelement</td>
+            <td>string <small class="text-muted"><i>(CSS&nbsp;selector)</i></small></td>
+            <td>'.<i>{popup_id}</i>_open'</td>
+            <td>Enables you to define custom element which will open the popup on click. By default, in our case it's set to <code>.my_popup_open</code>.</td>
+        </tr>
+        <tr>
+            <td>closeelement</td>
+            <td>string <small class="text-muted"><i>(CSS&nbsp;selector)</i></small></td>
+            <td>'.<i>{popup_id}</i>_close'</td>
+            <td>Enables you to define custom element which will close the popup on click. By default, in our case it's set to <code>.my_popup_close</code>.</td>
+        </tr>
+        <tr>
+            <td>transition</td>
+            <td>string <small class="text-muted"><i>(CSS&nbsp;transition)</i></small></td>
+            <td></td>
+            <td>
+                <p>Sets CSS transition when showing and hiding a popup.</p>
+                <p class="text-muted"><small>Use this if you don't need separate transition for background, or different transition for opening and closing the popup, or if you need to transition only selected properties – otherwise set custom transitions directly in CSS.</small></p>
+                <p class="text-muted"><small>Simple fade effect <code>$('#my_popup').popup({transition: 'all 0.3s'})</code> is equivalent to <code>#my_popup, #my_popup_wrapper, #my_popup_background {transition: all 0.3s;}</code></small></p>
+                <p class="text-muted"><small>Setting fade effect for all popups on the site: <code>$.fn.popup.defaults.transition = 'all 0.3s';</code> is equivalent to <code>.popup_content, .popup_wrapper, .popup_background {transition: all 0.3s;}</code></small></p>
+            </td>
+        </tr>
+        <tr>
+            <td>tooltipanchor</td>
+            <td>object <br /><small class="text-muted"><i>JQuery or DOM object</i></small></td>
+            <td></td>
+            <td>
+                <p>Sets an element to be an anchor for tooltip position.</p>
+                <p class="text-muted"><small>For example, for multiple opening links using the same tooltip on mouseover:</small></p>
+<pre class="prettyprint">
+<code>$('.my_popup_open').on({
+    mouseenter: function(event) {
+        $('#my_popup').popup({
+            tooltipanchor: event.target,
+            autoopen: true,
+            type: 'tooltip'
+        });
+    },
+    mouseleave: function() {
+        $('#my_popup').popup('hide');
+    }
+});</code>
+</pre>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4">
+                <p>Example:</p>
+<pre class="prettyprint">
+<code>$('#my_popup').popup({
+  opacity: 0.3,
+  transition: 'all 0.3s'
+});</code>
+</pre>
+            </td>
+        </tr>
+
+        </tbody>
+        </table>
+        </div>
+
+
+
+        <h3>Callback events</h3>
+
+        <table class="table table-bordered table-striped">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+       <tr>
+            <td>beforeopen</td>
+            <td>function</td>
+            <td>Callback function which will execute before the popup is opened.</td>
+        </tr>
+        <tr>
+            <td>onopen</td>
+            <td>function</td>
+            <td>Callback function which will execute when the popup starts to open.</td>
+        </tr>
+        <tr>
+            <td>onclose</td>
+            <td>function</td>
+            <td>Callback function which will execute when the popup starts to close.</td>
+        </tr>
+        <tr>
+            <td>opentransitionend</td>
+            <td>function</td>
+            <td>Callback function which will execute after the opening CSS transition is over, only if transition actually occurs and if supported by the browser.</td>
+        </tr>
+        <tr>
+            <td>closetransitionend</td>
+            <td>function</td>
+            <td>Callback function which will execute after the closing CSS transition is over, only if transition actually occurs and if supported by the browser.</td>
+        </tr>
+        <tr>
+            <td colspan="3">
+                <p>Example:</p>
+<pre class="prettyprint">
+<code>$('#my_popup').popup({
+  onopen: function() {
+    alert('Popup just opened!');
+  }
+});</code>
+</pre>
+            </td>
+        </tr>
+        </tbody>
+        </table>
+
+        <h3>Defaults</h3>
+
+        <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <td><p>Default values for options and events can be modified.</p></td>
+            </tr>
+        </thead>
+        <tr>
+            <td>
+            <p>Example:</p>
+
+<pre class="prettyprint">
+<code>$.fn.popup.defaults.transition = 'all 0.3s';
+$.fn.popup.defaults.pagecontainer = '.container';
+</code></pre>
+            </td>
+        </tr>
+        </table>
+
+
+        <h3>Methods</h3>
+
+        <table class="table table-bordered table-striped">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>.popup(options)</td>
+            <td><p>Activates your content as a popup. Accepts an optional options <code>object</code>.</p>
+<pre class="prettyprint">
+<code>$('#my_popup').popup({
+  background: false
+});
+</code>
+</pre>
+            </td>
+        </tr>
+        <tr>
+            <td>.popup('show')</td>
+            <td>
+                <p>Manually opens a popup.</p>
+                <pre class="prettyprint"><code>$('#my_popup').popup('show');</code></pre>
+            </td>
+        </tr>
+        <tr>
+            <td>.popup('hide')</td>
+            <td>
+                <p>Manually hides a popup.</p>
+                <pre class="prettyprint"><code>$('#my_popup').popup('hide');</code></pre>
+            </td>
+        </tr>
+        <tr>
+            <td>.popup('toggle')</td>
+            <td>
+                <p>Manually toggles a popup.</p>
+                <pre class="prettyprint"><code>$('#my_popup').popup('toggle');</code></pre>
+            </td>
+        </tr>
+        </tbody>
+        </table>
+
+
+        <p>&nbsp;</p>
+
+    </section>
+
+    <footer class="col-md-10 col-md-offset-1" role="contentinfo">
+
+        <iframe src="http://ghbtns.com/github-btn.html?user=vast-engineering&repo=jquery-popup-overlay&type=watch&size=small&count=true"
+            allowtransparency="true" frameborder="0" scrolling="0" width="100" height="20"></iframe>
+
+        <p class="text-muted"><small>Released under the <a href="http://opensource.org/licenses/MIT">MIT</a> license.</small></p>
+    </footer>
+
+</div>
+
+
+
+
+
+
+<!-- Set defaults -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- Basic -->
+
+<div id="basic" class="well" style="max-width:44em;">
+    <h4>Basic example</h4>
+    <p>Try to change the width and height of browser window, or to rotate your device, and also try to navigate with the <kbd>Tab</kbd> key.</p>
+    <p>You can close the dialog by pressing the <kbd>Esc</kbd> key, or by clicking on the background outside the content area, or by clicking on the Close button.</p>
+    <button class="basic_close fade_open btn btn-default">Next example</button>
+    <button class="basic_close btn btn-default">Close</button>
+</div>
+
+<script>
+$(document).ready(function () {
+  $('#basic').popup();
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+<!-- Fade -->
+
+<div id="fade" class="well">
+    <h4>Fade example</h4>
+<pre class="prettyprint">
+<code>$('#fade').popup({
+  transition: 'all 0.3s',
+  scrolllock: true // optional
+});</code>
+</pre>
+    <p>Or you can set transitions directly in CSS:</p>
+<pre class="prettyprint"><code>$('#fade').popup();</code></pre>
+<pre class="prettyprint"><code>#fade,
+#fade_wrapper,
+#fade_background {
+  transition: all 0.3s;
+}
+</code>
+</pre>
+    <button class="fade_close fadeandscale_open btn btn-default">Next example</button>
+    <button class="fade_close btn btn-default">Close</button>
+</div>
+
+<script>
+$(document).ready(function () {
+
+    $('#fade').popup({
+      transition: 'all 0.3s',
+      scrolllock: true
+    });
+
+});
+</script>
+
+
+
+
+
+
+
+
+
+<!-- Fade & scale -->
+
+<div id="fadeandscale" class="well">
+    <h4>Fade &amp; scale example</h4>
+<pre class="prettyprint">
+<code>$('#fadeandscale').popup({
+  transition: 'all 0.3s'
+});</code>
+</pre>
+<pre class="prettyprint">
+<code>#fadeandscale {
+  transform: scale(0.8);
+}
+.popup_visible #fadeandscale {
+  transform: scale(1);
+}</code>
+</pre>
+    <button class="fadeandscale_close slide_open btn btn-default">Next example</button>
+    <button class="fadeandscale_close btn btn-default">Close</button>
+</div>
+
+<script>
+$(document).ready(function () {
+
+    $('#fadeandscale').popup({
+        pagecontainer: '.container',
+        transition: 'all 0.3s'
+    });
+
+});
+</script>
+
+<style>
+#fadeandscale {
+    -webkit-transform: scale(0.8);
+       -moz-transform: scale(0.8);
+        -ms-transform: scale(0.8);
+            transform: scale(0.8);
+}
+.popup_visible #fadeandscale {
+    -webkit-transform: scale(1);
+       -moz-transform: scale(1);
+        -ms-transform: scale(1);
+            transform: scale(1);
+}
+</style>
+
+
+
+
+
+
+
+
+
+<!-- Slide in -->
+
+<div id="slide" class="well">
+<h4>Slide in example</h4>
+<pre class="prettyprint">
+<code>$('#slide').popup({
+  outline: true, // optional
+  focusdelay: 400, // optional
+  vertical: 'top' //optional
+});
+</code>
+</pre>
+<pre class="prettyprint">
+<code>#slide_background {
+  transition: all 0.3s 0.3s;
+}
+#slide,
+#slide_wrapper {
+  transition: all 0.3s ease-out;
+}
+#slide {
+  transform: translateX(0) translateY(-40%);
+}
+.popup_visible #slide {
+  transform: translateX(0) translateY(0);
+}
+</code>
+</pre>
+    <button class="slide_close standalone_open btn btn-default">Next example</button>
+    <button class="slide_close btn btn-default">Close</button>
+</div>
+
+<script>
+$(document).ready(function () {
+
+    $('#slide').popup({
+        focusdelay: 400,
+        outline: true,
+        vertical: 'top'
+    });
+
+});
+</script>
+
+<style>
+#slide_background {
+    -webkit-transition: all 0.3s 0.3s;
+       -moz-transition: all 0.3s 0.3s;
+            transition: all 0.3s 0.3s;
+}
+#slide,
+#slide_wrapper {
+    -webkit-transition: all 0.4s;
+       -moz-transition: all 0.4s;
+            transition: all 0.4s;
+}
+#slide {
+    -webkit-transform: translateX(0) translateY(-40%);
+       -moz-transform: translateX(0) translateY(-40%);
+        -ms-transform: translateX(0) translateY(-40%);
+            transform: translateX(0) translateY(-40%);
+}
+.popup_visible #slide {
+    -webkit-transform: translateX(0) translateY(0);
+       -moz-transform: translateX(0) translateY(0);
+        -ms-transform: translateX(0) translateY(0);
+            transform: translateX(0) translateY(0);
+}
+</style>
+
+
+
+
+
+
+
+
+
+<!-- Stand alone -->
+
+<div id="standalone">
+<h4>Stand alone example</h4>
+<pre class="prettyprint">
+<code>$('#standalone').popup({
+  color: 'white',
+  opacity: 1,
+  transition: '0.3s',
+  scrolllock: true
+});
+</code>
+</pre>
+<pre class="prettyprint">
+<code>#standalone {
+  transform: scale(0.8);
+}
+.popup_visible #standalone {
+  transform: scale(1);
+}
+</code>
+</pre>
+    <button class="standalone_close active_bg_open btn btn-default">Next example</button>
+    <button class="standalone_close btn btn-default">Close</button>
+</div>
+
+
+
+<script>
+$(document).ready(function () {
+
+    $('#standalone').popup({
+      color: 'white',
+      opacity: 1,
+      transition: '0.3s',
+      scrolllock: true
+    });
+
+});
+</script>
+
+<style>
+#standalone {
+    -webkit-transform: scale(0.8);
+       -moz-transform: scale(0.8);
+        -ms-transform: scale(0.8);
+            transform: scale(0.8);
+}
+.popup_visible #standalone {
+    -webkit-transform: scale(1);
+       -moz-transform: scale(1);
+        -ms-transform: scale(1);
+            transform: scale(1);
+}
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- Active background -->
+
+<div id="active_bg" class="well" style="max-width:44em;">
+    <h4>Active background example</h4>
+    <p>You can click on any element at the background : they still active and won't close the popup.</p>
+    <p>You can close the dialog by pressing the <kbd>Esc</kbd> key, or by clicking on the Close button.</p>
+    <button class="active_bg_close my_tooltip_open btn btn-default">Next example</button>
+    <button class="active_bg_close btn btn-default">Close</button>
+</div>
+
+<script>
+$(document).ready(function () {
+  $('#active_bg').popup({
+    backgroundactive:true
+  });
+});
+</script>
+
+
+
+
+<!-- Tooltip -->
+
+<div id="my_tooltip" class="well">
+    <a href="#" class="my_tooltip_close" style="float:right;padding:0 0.4em;">×</a>
+    <h4>Tooltip example</h4>
+    <p>Tooltip content will be positioned relative to the opening link.</p>
+    <button class="my_tooltip_close fall_open btn btn-default">Next example</button>
+    <button class="my_tooltip_close btn btn-default">Close</button>
+</div>
+
+<script>
+$(document).ready(function () {
+
+    $('#my_tooltip').popup({
+        type: 'tooltip',
+        vertical: 'top',
+        transition: '0.3s all 0.1s',
+        tooltipanchor: $('#my_tooltip_open')
+    });
+
+});
+</script>
+
+
+
+<!-- Callback events -->
+
+<div id="fall" class="well" style="max-width: 45em;">
+    <h4>Callback events</h4>
+<pre class="prettyprint">
+<code>$('#fall').popup({
+        beforeopen: function () {
+            alert('beforeopen');
+        },
+        onopen: function () {
+            alert('onopen');
+        },
+        onclose: function () {
+            alert('onclose');
+        },
+        opentransitionend: function () {
+            alert('opentransitionend');
+        },
+        closetransitionend: function () {
+            alert('closetransitionend');
+        }
+    });
+</code>
+</pre>
+    <button class="fall_close other_open btn btn-default">Next example</button>
+    <button class="fall_close btn btn-default">Close</button>
+</div>
+
+<script>
+$(document).ready(function () {
+
+    $('#fall').popup({
+        beforeopen: function () {
+            alert('beforeopen');
+        },
+        onopen: function () {
+            alert('onopen');
+        },
+        onclose: function () {
+            alert('onclose');
+        },
+        opentransitionend: function () {
+            alert('opentransitionend');
+        },
+        closetransitionend: function () {
+            alert('closetransitionend');
+        }
+    });
+
+});
+</script>
+
+<style>
+    #fall_background {
+        -webkit-transition: all 3s;
+           -moz-transition: all 3s;
+                transition: all 3s;
+    }
+    #fall_wrapper {
+        -webkit-transition: all 3s;
+           -moz-transition: all 3s;
+                transition: all 3s;
+        -webkit-perspective: 1300px;
+        -moz-perspective: 1300px;
+        perspective: 1300px;
+    }
+    #fall {
+        -webkit-transition: all 3s ease-in;
+        -moz-transition: all 3s ease-in;
+        transition: all 3s ease-in;
+        -webkit-transform-style: preserve-3d;
+        -moz-transform-style: preserve-3d;
+        transform-style: preserve-3d;
+        -webkit-transform: translateZ(600px) rotateX(20deg);
+        -moz-transform: translateZ(600px) rotateX(20deg);
+        -ms-transform: translateZ(600px) rotateX(20deg);
+        transform: translateZ(600px) rotateX(20deg);
+    }
+    .popup_visible #fall {
+        -webkit-transform: translateZ(0px) rotateX(0deg);
+        -moz-transform: translateZ(0px) rotateX(0deg);
+        -ms-transform: translateZ(0px) rotateX(0deg);
+        transform: translateZ(0px) rotateX(0deg);
+    }
+</style>
+
+
+
+
+
+
+<!-- Other examples -->
+
+<div id="other" class="well" style="max-width:44em; min-width: 30em;">
+    <h4>Other examples:</h4>
+    <ul>
+        <li><a target="_blank" href="http://jsbin.com/makajini/1/edit">Viewport Image</a></li>
+    </ul>
+    <button class="other_close btn btn-default">Close</button>
+</div>
+
+<script>
+$(document).ready(function () {
+  $('#other').popup();
+});
+</script>
+
+
+
+
+
+
+<!-- Google Prettify syntax highlighting -->
+<script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js?autoload=true&lang=css"></script>
+<style>
+    pre.prettyprint {padding: 9px 14px;}
+</style>
+
+</body>
+</html>
